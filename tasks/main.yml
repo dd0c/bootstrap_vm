@@ -1,0 +1,107 @@
+---
+- name: Prompt for new hostname
+  pause:
+    prompt: "Enter the new Proxmox hostname for {{ inventory_hostname }}"
+  register: new_hostname_prompt
+  when: new_hostname is not defined
+
+- name: Set new hostname variable
+  set_fact:
+    new_hostname: "{{ new_hostname_prompt.user_input }}"
+  when: new_hostname is not defined
+
+- name: Prompt for new IP address
+  pause:
+    prompt: "Enter the new IP address for {{ inventory_hostname }}"
+  register: new_ip_prompt
+  when: new_ip is not defined
+
+- name: Set new IP address variable
+  set_fact:
+    new_ip: "{{ new_ip_prompt.user_input }}"
+  when: new_ip is not defined
+
+- name: Update hostname
+  hostname:
+    name: "{{ new_hostname }}"
+  notify: restart_network
+
+- name: Update /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1.*'
+    line: "127.0.1.1 {{ new_hostname }}"
+    state: present
+
+- name: Configure network interface
+  blockinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      TYPE=Ethernet
+      BOOTPROTO=static
+      NAME=eth0
+      DEVICE=eth0
+      ONBOOT=yes
+      IPADDR={{ new_ip }}
+      NETMASK={{ netmask | default('255.255.255.0') }}
+      GATEWAY={{ gateway | default(ansible_default_ipv4.gateway) }}
+      DNS1={{ dns1 | default('8.8.8.8') }}
+      DNS2={{ dns2 | default('8.8.4.4') }}
+    create: yes
+
+- name: Create {{ ansible_user_name }} user
+  user:
+    name: "{{ ansible_user_name }}"
+    groups: "{{ ansible_user_groups | default(['wheel']) }}"
+    shell: "{{ ansible_user_shell | default('/bin/bash') }}"
+    create_home: yes
+    state: present
+
+- name: Set {{ ansible_user_name }} user password
+  user:
+    name: "{{ ansible_user_name }}"
+    password: "{{ ansible_user_password }}"
+    update_password: always
+
+- name: Create .ssh directory for {{ ansible_user_name }}
+  file:
+    path: "/home/{{ ansible_user_name }}/.ssh"
+    state: directory
+    owner: "{{ ansible_user_name }}"
+    group: "{{ ansible_user_name }}"
+    mode: '0700'
+
+- name: Set authorized_keys for {{ ansible_user_name }} user
+  copy:
+    content: "{{ ansible_user_authorized_keys }}"
+    dest: "/home/{{ ansible_user_name }}/.ssh/authorized_keys"
+    owner: "{{ ansible_user_name }}"
+    group: "{{ ansible_user_name }}"
+    mode: '0600'
+
+- name: Configure sudoers for {{ ansible_user_name }}
+  lineinfile:
+    path: "/etc/sudoers.d/{{ ansible_user_name }}"
+    line: "{{ ansible_user_name }} ALL=(ALL) NOPASSWD:ALL"
+    create: yes
+    mode: '0440'
+
+- name: Install required packages
+  package:
+    name: "{{ required_packages }}"
+    state: present
+
+- name: Ensure SSH service is running and enabled
+  service:
+    name: sshd
+    state: started
+    enabled: yes
+
+- name: Configure SSH for {{ ansible_user_name }} user
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication yes'
+    backup: yes
+  notify: restart_ssh

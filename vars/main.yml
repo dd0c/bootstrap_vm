@@ -1,0 +1,16 @@
+---
+# Role-specific variables
+# These are role-specific variables that should not be overridden
+
+# Supported operating systems
+supported_os:
+  - RedHat
+  - CentOS
+  - Rocky
+  - AlmaLinux
+  - Fedora
+
+# Network configuration paths by OS family
+network_config_paths:
+  RedHat: "/etc/sysconfig/network-scripts/ifcfg-{{ network_interface }}"
+  Debian: "/etc/network/interfaces"

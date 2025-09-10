@@ -1,0 +1,10 @@
+---
+- name: restart_network
+  service:
+    name: NetworkManager
+    state: restarted
+
+- name: restart_ssh
+  service:
+    name: sshd
+    state: restarted

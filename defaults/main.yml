@@ -1,0 +1,24 @@
+---
+# Network configuration defaults
+netmask: "255.255.255.0"
+dns1: "8.8.8.8"
+dns2: "8.8.4.4"
+
+# Ansible user configuration
+ansible_user_name: "tycho"
+ansible_user_groups: ["wheel"]
+ansible_user_shell: "/bin/bash"
+ansible_user_password: "{{ vault_ansible_user_password }}"
+ansible_user_authorized_keys: "{{ vault_ansible_user_authorized_keys }}"
+
+# Required packages to install
+required_packages:
+  - vim
+  - htop
+  - curl
+  - wget
+  - git
+  - openssh-server
+
+# Network interface name (adjust for your system)
+network_interface: "eth0"
