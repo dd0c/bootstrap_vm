@@ -2,8 +2,8 @@
 galaxy_info:
   author: tycho
   description: Bootstrap newly deployed VMs with hostname, network, and user configuration
-  company: Personal
-  license: MIT
+  company: Akuadora
+  license: GPL3
   min_ansible_version: "2.9"
   platforms:
     - name: EL
@@ -11,6 +11,7 @@ galaxy_info:
         - 7
         - 8
         - 9
+        - 10
     - name: Fedora
       versions:
         - 35
@@ -19,11 +20,5 @@ galaxy_info:
         - 38
         - 39
   galaxy_tags:
-    - bootstrap
-    - vm
-    - hostname
-    - network
-    - user
-    - ssh
 
 dependencies: []
